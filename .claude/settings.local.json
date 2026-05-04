@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(gh auth *)",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(mkdir -p /tmp/home-finder-claw-docs)",
+      "Bash(mv /Users/rmaski/ai/home-finder-claw/CLAUDE.md /Users/rmaski/ai/home-finder-claw/BUILD_SPEC.md /Users/rmaski/ai/home-finder-claw/README.md /tmp/home-finder-claw-docs/)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --use-npm --turbopack)"
+    ]
+  }
+}
