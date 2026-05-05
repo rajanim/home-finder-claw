@@ -1,6 +1,6 @@
 # Home Finder Claw
 
-Multi-agent, voice-enabled real estate search demo for New York City. Built to showcase Principal-level Agentic AI engineering for the Zillow interview.
+Multi-agent, voice-enabled real estate search demo for New York City. 
 
 Six agents, OpenSearch hybrid retrieval, OpenAI Realtime voice, Fair Housing guardrail, full tracing and eval. Deployed on Vercel.
 
