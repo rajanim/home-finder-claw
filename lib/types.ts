@@ -78,3 +78,27 @@ export type SearchResponse = {
   listings: Listing[];
   aggregations: SearchAggregations;
 };
+
+// Research SSE event shapes. The /api/research endpoint emits these as
+// JSON-encoded data lines (one per `data:` field).
+export type ResearchPhase =
+  | "planning"
+  | "fetching"
+  | "synthesizing"
+  | "complete"
+  | "error";
+
+export type FetcherName =
+  | "getZhvi"
+  | "getComplaints"
+  | "getSchools"
+  | "getTransit";
+
+export type ResearchEvent =
+  | { type: "phase"; name: ResearchPhase }
+  | { type: "planned"; fetchers: FetcherName[] }
+  | { type: "fetched"; summary: Record<string, string> }
+  | { type: "delta"; text: string }
+  | { type: "complete"; trace_id: string }
+  | { type: "error"; message: string };
+

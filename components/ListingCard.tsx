@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Bath, Train } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Bed, Bath, Train, Sparkles } from "lucide-react";
 import type { Listing } from "@/lib/types";
 
 function formatPrice(p: number): string {
@@ -76,6 +78,16 @@ export function ListingCard({ listing, active, onHover, onClick }: Props) {
                 ({formatDistance(listing.subway_distance_m)})
               </span>
             </span>
+          </div>
+          <div className="mt-2">
+            <Link
+              href={`/listing/${encodeURIComponent(listing.listing_id)}`}
+              onClick={(e) => e.stopPropagation()}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <Sparkles className="mr-1 h-3 w-3" />
+              Research
+            </Link>
           </div>
         </div>
       </CardContent>
