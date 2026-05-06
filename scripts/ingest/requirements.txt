@@ -1,0 +1,11 @@
+# Python ingestion dependencies. Pin to known-good versions so the pipeline
+# is reproducible. Use Python 3.11+ in a venv.
+
+pandas==2.2.3
+numpy==2.1.3
+openai==1.55.0
+opensearch-py==2.7.1
+requests==2.32.3
+python-dotenv==1.0.1
+tqdm==4.67.1
+kaggle==1.6.17
