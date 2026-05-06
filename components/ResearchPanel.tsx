@@ -137,6 +137,7 @@ export function ResearchPanel({ listingId }: Props) {
       {traceId && (
         <p className="mt-3 text-[10px] text-muted-foreground">
           trace: <span className="font-mono">{traceId.slice(0, 8)}</span>
+          {" · "}phases: planner → fetchers → synthesizer (Llama 3.3 70B + Llama 3.1 405B)
         </p>
       )}
     </div>

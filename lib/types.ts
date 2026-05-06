@@ -70,6 +70,24 @@ export type GuardResult = {
   redacted?: string;
 };
 
+// Agent activity is the user-visible reasoning timeline. Each entry is one
+// span (LLM call, tool call, or guard check). Surfaced in API responses so
+// the UI can show "what each agent did" in real time.
+export type AgentActivity = {
+  agent: string;
+  kind: string;
+  model?: string;
+  latency_ms: number;
+  ok: boolean;
+  error?: string;
+  // Pre-formatted human-readable summary, computed server-side so the UI
+  // does not need to know about every span shape.
+  summary: string;
+  // Tokens used (if any) for cost-awareness.
+  tokens_in?: number;
+  tokens_out?: number;
+};
+
 export type SearchResponse = {
   trace_id: string;
   intent: Intent;
@@ -77,6 +95,25 @@ export type SearchResponse = {
   guard_post: GuardResult;
   listings: Listing[];
   aggregations: SearchAggregations;
+  agent_activity: AgentActivity[];
+};
+
+// Compare API
+export type CompareRow = {
+  feature: string;
+  values: string[];
+};
+
+export type CompareResult = {
+  rows: CompareRow[];
+  tradeoffs: string;
+};
+
+export type CompareResponse = {
+  trace_id: string;
+  listings: Listing[];
+  result: CompareResult;
+  agent_activity: AgentActivity[];
 };
 
 // Research SSE event shapes. The /api/research endpoint emits these as

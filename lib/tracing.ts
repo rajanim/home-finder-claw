@@ -154,6 +154,41 @@ async function ensureTracesIndex(): Promise<void> {
   tracesIndexEnsured = true;
 }
 
+// Snapshot the spans collected so far for a trace, without removing them.
+// Used by the supervisor to attach agent activity to the user-facing
+// response. flushTrace() still owns the lifecycle and clears the buffer.
+export function getSpans(traceId: string): Array<{
+  agent: string;
+  kind: string;
+  model?: string;
+  latency_ms: number;
+  ok: boolean;
+  error?: string;
+  output?: string;
+  input?: string;
+  tokens_in?: number;
+  tokens_out?: number;
+  span_id: string;
+  parent_span_id: string | null;
+  started_at: string;
+}> {
+  return [...(buffers.get(traceId) ?? [])].map((s) => ({
+    agent: s.agent,
+    kind: s.kind,
+    model: s.model,
+    latency_ms: s.latency_ms,
+    ok: s.ok,
+    error: s.error,
+    output: s.output,
+    input: s.input,
+    tokens_in: s.tokens_in,
+    tokens_out: s.tokens_out,
+    span_id: s.span_id,
+    parent_span_id: s.parent_span_id,
+    started_at: s.started_at,
+  }));
+}
+
 export async function flushTrace(traceId: string): Promise<number> {
   const spans = buffers.get(traceId) ?? [];
   buffers.delete(traceId);

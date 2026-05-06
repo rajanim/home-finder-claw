@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Bed, Bath, Train, Sparkles } from "lucide-react";
+import { Bed, Bath, Train, Sparkles, Check } from "lucide-react";
 import type { Listing } from "@/lib/types";
 
 function formatPrice(p: number): string {
@@ -21,12 +21,24 @@ function formatDistance(m: number): string {
 type Props = {
   listing: Listing;
   active: boolean;
+  selected: boolean;
+  selectionFull: boolean;
   onHover: (id: string | null) => void;
   onClick: (id: string) => void;
+  onToggleCompare: (id: string) => void;
 };
 
-export function ListingCard({ listing, active, onHover, onClick }: Props) {
+export function ListingCard({
+  listing,
+  active,
+  selected,
+  selectionFull,
+  onHover,
+  onClick,
+  onToggleCompare,
+}: Props) {
   const photo = listing.photos?.[0];
+  const compareDisabled = !selected && selectionFull;
   return (
     <Card
       onMouseEnter={() => onHover(listing.listing_id)}
@@ -34,12 +46,10 @@ export function ListingCard({ listing, active, onHover, onClick }: Props) {
       onClick={() => onClick(listing.listing_id)}
       className={`cursor-pointer overflow-hidden p-0 transition-shadow ${
         active ? "ring-2 ring-primary shadow-md" : "hover:shadow-md"
-      }`}
+      } ${selected ? "ring-2 ring-primary" : ""}`}
     >
       <CardContent className="flex gap-3 p-3">
         {photo ? (
-          // Using a regular img tag avoids next/image runtime config for
-          // remote Unsplash URLs. Acceptable for the demo's small list.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photo}
@@ -79,7 +89,7 @@ export function ListingCard({ listing, active, onHover, onClick }: Props) {
               </span>
             </span>
           </div>
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <Link
               href={`/listing/${encodeURIComponent(listing.listing_id)}`}
               onClick={(e) => e.stopPropagation()}
@@ -88,6 +98,40 @@ export function ListingCard({ listing, active, onHover, onClick }: Props) {
               <Sparkles className="mr-1 h-3 w-3" />
               Research
             </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!compareDisabled) onToggleCompare(listing.listing_id);
+              }}
+              disabled={compareDisabled}
+              aria-pressed={selected}
+              className={`inline-flex h-7 items-center gap-1 rounded-md border px-2 text-xs transition-colors ${
+                selected
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:bg-muted"
+              } ${
+                compareDisabled
+                  ? "cursor-not-allowed opacity-50"
+                  : "cursor-pointer"
+              }`}
+              title={
+                compareDisabled
+                  ? "Already comparing 4 listings"
+                  : selected
+                    ? "Remove from compare"
+                    : "Add to compare"
+              }
+            >
+              {selected ? (
+                <>
+                  <Check className="h-3 w-3" />
+                  Selected
+                </>
+              ) : (
+                "Compare"
+              )}
+            </button>
           </div>
         </div>
       </CardContent>
