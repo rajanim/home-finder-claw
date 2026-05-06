@@ -17,7 +17,11 @@ export function ListingMap({ listings, activeId, onMarkerClick }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
-  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const rawToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  // Mapbox GL JS only accepts public tokens. Reject sk.* up front so the
+  // page does not crash if someone pastes a secret token by mistake.
+  const tokenIsPublic = rawToken?.startsWith("pk.") ?? false;
+  const token = tokenIsPublic ? rawToken : undefined;
 
   // Initialize map once.
   useEffect(() => {
@@ -117,9 +121,12 @@ export function ListingMap({ listings, activeId, onMarkerClick }: Props) {
   }, [activeId]);
 
   if (!token) {
+    const reason = !rawToken
+      ? "NEXT_PUBLIC_MAPBOX_TOKEN is not set in this environment."
+      : "Mapbox GL needs a public token (pk.*). The current value looks like a secret token.";
     return (
-      <div className="flex h-full items-center justify-center rounded-md border border-dashed bg-muted/20 text-sm text-muted-foreground">
-        Map unavailable: NEXT_PUBLIC_MAPBOX_TOKEN is not set in this environment.
+      <div className="flex h-full items-center justify-center rounded-md border border-dashed bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+        Map unavailable: {reason}
       </div>
     );
   }
