@@ -35,7 +35,9 @@ from _common import (
 
 log = get_logger("02_clean_listings")
 
-SAMPLE_SIZE = 5_000
+# Bonsai Sandbox tier (free, 125 MB) holds the demo comfortably at 500 listings.
+# Bump to 5_000 or 20_000 after upgrading to Standard Sprout.
+SAMPLE_SIZE = 500
 SAMPLE_SEED = 42
 JITTER_DEG = 0.005  # ~500 meters; deterministic per listing
 NYC_CITIES = {

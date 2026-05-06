@@ -1,10 +1,14 @@
 """04_embed_text.py
 
-Embed each listing's synthesized text card with `text-embedding-3-small`
-and write the resulting 1536-dim vectors back to JSONL.
+Embed each listing's synthesized text card with NVIDIA NIM
+`nvidia/nv-embedqa-e5-v5` (1024 dim) and write vectors back to JSONL.
 
 The card string mirrors the text used at query time so the cosine geometry
 stays consistent. See spec section 5.1.
+
+NVIDIA's nv-embedqa-e5-v5 supports asymmetric retrieval via input_type:
+  - "passage" for documents at index time (this script)
+  - "query"   for user queries at runtime (used by the search API)
 
 Reads:  data/processed/listings.with_photos.jsonl
 Writes: data/processed/listings.embedded.jsonl
@@ -25,7 +29,7 @@ from _common import (
     EMBED_DIM,
     EMBED_MODEL,
     get_logger,
-    get_openai,
+    get_nvidia,
     read_jsonl,
     write_jsonl,
 )
@@ -35,7 +39,9 @@ log = get_logger("04_embed_text")
 INPUT = DATA_PROCESSED / "listings.with_photos.jsonl"
 OUTPUT = DATA_PROCESSED / "listings.embedded.jsonl"
 
-BATCH_SIZE = 100  # OpenAI accepts up to 2048 inputs per call; 100 keeps memory low
+# NVIDIA's embedding endpoint accepts up to 96 inputs per call. 32 stays well
+# under the limit and keeps memory + latency predictable on Sandbox.
+BATCH_SIZE = 32
 
 
 def card_text(listing: dict) -> str:
@@ -60,14 +66,20 @@ def main() -> int:
     listings = read_jsonl(INPUT)
     log.info("Embedding %d listings with %s", len(listings), EMBED_MODEL)
 
-    client = get_openai()
+    client = get_nvidia()
 
     texts = [card_text(l) for l in listings]
     vectors: list[list[float]] = []
 
     for start in tqdm(range(0, len(texts), BATCH_SIZE), desc="embed"):
         batch = texts[start : start + BATCH_SIZE]
-        resp = client.embeddings.create(model=EMBED_MODEL, input=batch)
+        resp = client.embeddings.create(
+            model=EMBED_MODEL,
+            input=batch,
+            # NVIDIA-specific: "passage" tells the model these are documents
+            # being indexed, not user queries. Improves asymmetric retrieval.
+            extra_body={"input_type": "passage"},
+        )
         for item in resp.data:
             vectors.append(item.embedding)
 

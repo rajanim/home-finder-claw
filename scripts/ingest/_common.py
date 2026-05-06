@@ -37,9 +37,13 @@ INDEX_NEIGHBORHOODS = "neighborhoods-v1"
 INDEX_ZHVI = "zhvi-v1"
 INDEX_TRACES = "traces-v1"
 
-# OpenAI embedding model. Mirrored in lib/openai.ts.
-EMBED_MODEL = "text-embedding-3-small"
-EMBED_DIM = 1536
+# NVIDIA NIM embedding model. Mirrored in lib/llm.ts.
+# We use the OpenAI SDK with NVIDIA's OpenAI-compatible endpoint
+# (integrate.api.nvidia.com/v1). Voice in Phase 5 is the only feature that
+# still uses OpenAI directly.
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+EMBED_MODEL = "nvidia/nv-embedqa-e5-v5"
+EMBED_DIM = 1024
 
 
 # --------------------------------------------------------------------------
@@ -96,11 +100,24 @@ def get_opensearch():
 
 
 # --------------------------------------------------------------------------
-# OpenAI client (cached)
+# LLM clients (cached)
+#
+# We follow CLAUDE.md constraint #2: only the `openai` SDK is used. NVIDIA
+# NIM exposes an OpenAI-compatible endpoint, so we keep the same SDK with a
+# different baseURL and key. Use get_nvidia() for everything except voice.
 # --------------------------------------------------------------------------
 
 @lru_cache(maxsize=1)
+def get_nvidia():
+    """OpenAI SDK client pointing at NVIDIA NIM. Use for embeddings + chat."""
+    from openai import OpenAI
+    env = require_env("NVIDIA_API_KEY")
+    return OpenAI(api_key=env["NVIDIA_API_KEY"], base_url=NVIDIA_BASE_URL)
+
+
+@lru_cache(maxsize=1)
 def get_openai():
+    """OpenAI SDK client pointing at OpenAI direct. Phase 5 voice only."""
     from openai import OpenAI
     env = require_env("OPENAI_API_KEY")
     return OpenAI(api_key=env["OPENAI_API_KEY"])
