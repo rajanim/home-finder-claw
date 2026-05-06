@@ -13,7 +13,7 @@ Read this file before every action. Read `BUILD_SPEC.md` for the full architectu
 ## Hard Constraints (non-negotiable)
 
 1. **Frontend**: Next.js (App Router, currently 16.x) with TypeScript and React 19. Tailwind CSS v4 (CSS-based config in `app/globals.css`, no `tailwind.config.ts`). shadcn/ui for components. (Note: this overrides the standing Streamlit preference because the deployment target is Vercel and Streamlit does not host on Vercel.)
-2. **LLM access**: OpenAI SDK only. No LangChain, no LlamaIndex, no Vercel AI SDK abstractions over the OpenAI client. Direct `openai` npm package calls only.
+2. **LLM access**: OpenAI SDK only (the `openai` npm/pip package). No LangChain, no LlamaIndex, no Vercel AI SDK abstractions. Provider routing: **NVIDIA NIM (`integrate.api.nvidia.com`) is the primary provider** for embeddings and chat completions, accessed via the OpenAI SDK with `baseURL` override. **OpenAI direct is used only for the Realtime voice API** (no NVIDIA equivalent). Two clients, both using the `openai` package.
 3. **Vector store and search**: OpenSearch. No Pinecone, no Chroma, no pgvector substitution. Use AWS OpenSearch Serverless or Bonsai.io. Hybrid queries (BM25 + kNN + filters + aggregations) all go through one OpenSearch cluster.
 4. **Voice**: OpenAI Realtime API via WebRTC, ephemeral key minted server-side.
 5. **Data ingestion**: Python 3.11 scripts in `scripts/ingest/`. Read CSV, generate embeddings, push to OpenSearch. One-time job, not part of the Vercel runtime.
@@ -70,8 +70,9 @@ A `Supervisor` orchestrates them. See `BUILD_SPEC.md` Section 8 for prompts and 
 | Language | TypeScript (app), Python 3.11 (ingestion) |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | Map | Mapbox GL JS |
-| LLM | OpenAI gpt-4o-mini (default), gpt-4o (Researcher), gpt-4o-realtime-preview (voice) |
-| Embeddings (text) | OpenAI text-embedding-3-small (1536 dim) |
+| LLM (chat) | NVIDIA NIM `meta/llama-3.3-70b-instruct` (default), `meta/llama-3.1-405b-instruct` (Researcher synthesizer) |
+| LLM (voice) | OpenAI `gpt-4o-realtime-preview` (Realtime API, no NVIDIA equivalent) |
+| Embeddings (text) | NVIDIA NIM `nvidia/nv-embedqa-e5-v5` (1024 dim, retrieval-tuned) |
 | Embeddings (images) | Replicate CLIP ViT-B/32 (512 dim) via REST |
 | Vector + search | OpenSearch (Bonsai.io or AWS OpenSearch Serverless) |
 | Tracing | Custom OpenSearch index `traces-v1` |

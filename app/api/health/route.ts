@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const presence = envPresence([
+    "NVIDIA_API_KEY",
     "OPENAI_API_KEY",
     "OPENSEARCH_URL",
     "OPENSEARCH_USERNAME",
@@ -23,6 +24,12 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     phase: 0,
+    providers: {
+      llm_chat: "nvidia",
+      llm_voice: "openai",
+      embeddings: "nvidia",
+      vector_store: "opensearch",
+    },
     env: presence,
   });
 }

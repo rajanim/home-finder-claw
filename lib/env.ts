@@ -2,6 +2,7 @@
 // through requireEnv so missing config fails loudly with a single, readable error.
 
 export type EnvKey =
+  | "NVIDIA_API_KEY"
   | "OPENAI_API_KEY"
   | "OPENSEARCH_URL"
   | "OPENSEARCH_USERNAME"

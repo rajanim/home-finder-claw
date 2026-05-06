@@ -18,7 +18,7 @@ The demo must showcase, in this order during a live walkthrough:
 
 ## 2. Hard Constraints
 
-See `CLAUDE.md`. Summary: Next.js (App Router, currently 16.x with React 19 and Tailwind 4), TypeScript, OpenAI SDK only, OpenSearch only, no LangChain or LlamaIndex, no fabricated metrics, no apostrophes in contractions or dashes in prose anywhere in the codebase or docs.
+See `CLAUDE.md`. Summary: Next.js (App Router, currently 16.x with React 19 and Tailwind 4), TypeScript, OpenAI SDK only with **NVIDIA NIM as the primary provider via baseURL override** for embeddings and chat (OpenAI direct only for the Realtime voice API), OpenSearch only, no LangChain or LlamaIndex, no fabricated metrics, no apostrophes in contractions or dashes in prose anywhere in the codebase or docs.
 
 ## 3. Architecture
 
@@ -129,7 +129,7 @@ Each listing gets 4 photos: exterior, living, kitchen, bedroom.
       "photos":            { "type": "keyword" },
       "text_embedding": {
         "type": "knn_vector",
-        "dimension": 1536,
+        "dimension": 1024,
         "method": { "name": "hnsw", "space_type": "cosinesimil", "engine": "lucene" }
       },
       "image_embedding": {
@@ -249,7 +249,7 @@ Every agent is a TypeScript module under `lib/agents/`. Every agent function ret
 
 ### 7.1 IntentDecomposer
 
-**Model**: gpt-4o-mini  
+**Model**: NVIDIA NIM `meta/llama-3.3-70b-instruct` (via OpenAI SDK with NVIDIA `baseURL`)  
 **Input**: raw user query (string)  
 **Output**:
 ```ts
@@ -292,19 +292,19 @@ Schema: { semantic_query, filters, geo, must_have, nice_to_have, flagged_phrases
 **Model**: none (deterministic)  
 **Input**: `Intent`  
 **Output**: top 30 listings + aggregations  
-**Logic**: build the query in Section 6 from the Intent, embed `semantic_query` with text-embedding-3-small, geocode the landmark via a small in-repo lookup table for the demo (precomputed for Brooklyn and Manhattan landmarks), call OpenSearch.
+**Logic**: build the query in Section 6 from the Intent, embed `semantic_query` with NVIDIA `nv-embedqa-e5-v5` (1024 dim) via the OpenAI SDK with NVIDIA `baseURL`, geocode the landmark via a small in-repo lookup table for the demo (precomputed for Brooklyn and Manhattan landmarks), call OpenSearch.
 
 ### 7.3 NeighborhoodResearcher
 
-**Model**: gpt-4o (this one earns the more capable model)  
+**Model**: NVIDIA NIM `meta/llama-3.1-405b-instruct` for the synthesizer (this one earns the more capable model). Planner uses `meta/llama-3.3-70b-instruct`.  
 **Input**: `{ zip, listing_id }`  
 **Output**: a 5-bullet brief
 
 **Internal flow** (planner-fetcher-synthesizer):
 
-1. **Planner**: gpt-4o-mini prompted to choose which fetchers to call from a fixed list: `getZhvi`, `getComplaints`, `getSchools`, `getTransit`, `getCrime`. Output is a JSON array of fetcher names.
+1. **Planner**: `meta/llama-3.3-70b-instruct` prompted to choose which fetchers to call from a fixed list: `getZhvi`, `getComplaints`, `getSchools`, `getTransit`, `getCrime`. Output is a JSON array of fetcher names.
 2. **Fetchers**: deterministic OpenSearch queries against `neighborhoods-v1` and `zhvi-v1`.
-3. **Synthesizer**: gpt-4o prompted with all fetcher outputs to write 5 bullets, each under 25 words. Bullets cover: price trend, transit, schools, neighborhood vibe (from complaint mix), one specific tip.
+3. **Synthesizer**: `meta/llama-3.1-405b-instruct` prompted with all fetcher outputs to write 5 bullets, each under 25 words. Bullets cover: price trend, transit, schools, neighborhood vibe (from complaint mix), one specific tip.
 
 **System prompt for synthesizer**:
 
@@ -322,13 +322,13 @@ Rules:
 
 ### 7.4 Comparator
 
-**Model**: gpt-4o-mini  
+**Model**: NVIDIA NIM `meta/llama-3.3-70b-instruct`  
 **Input**: array of 2 to 4 `Listing` objects  
 **Output**: a markdown table with rows for price, beds/baths, transit, schools, year built, and a final "tradeoffs" row written by the LLM.
 
 ### 7.5 VoiceAgent
 
-**Model**: gpt-4o-realtime-preview  
+**Model**: OpenAI `gpt-4o-realtime-preview` (this is the only feature that does not route through NVIDIA, since NVIDIA does not host an OpenAI-compatible Realtime API).  
 **Transport**: WebRTC, browser-to-OpenAI direct.
 
 **Server side** (`/api/voice/session`): mint an ephemeral session key from OpenAI Realtime API, return it to the browser. Configure the session with two tools: `search_listings` and `get_neighborhood_brief`, both pointing back to the same Next.js API routes.
@@ -349,7 +349,7 @@ Workflow:
 
 ### 7.6 FairHousingGuard
 
-**Model**: gpt-4o-mini  
+**Model**: NVIDIA NIM `meta/llama-3.3-70b-instruct`  
 **Input**: any user-facing string (input or output)  
 **Output**: `{ ok: boolean, reason?: string, redacted?: string }`
 
@@ -466,10 +466,12 @@ The eval runner POSTs each query, scores with simple deterministic rules where p
 ### Phase 1 - Data ingestion (Days 1-2)
 
 - Provision OpenSearch on Bonsai.io or AWS OpenSearch Serverless
+- Get NVIDIA API key from https://build.nvidia.com (free credits cover the demo)
+- Run `scripts/smoke/check-providers.mjs` to verify NVIDIA chat and embedding endpoints respond
 - Run scripts/ingest/01-06 in order
-- Verify 20,000 listings indexed with embeddings, photos, geo points
+- Verify listings indexed with embeddings (1024 dim from `nv-embedqa-e5-v5`), photos, geo points
 
-**Done when**: an `OpenSearch` query for "Brooklyn under 1M" returns at least 100 hits with photo URLs that load.
+**Done when**: an OpenSearch query for "Brooklyn under 1M" returns at least 100 hits with photo URLs that load.
 
 ### Phase 2 - Search agents and UI (Days 3-4)
 
@@ -525,7 +527,10 @@ The eval runner POSTs each query, scores with simple deterministic rules where p
 `.env.example`:
 
 ```
-# OpenAI
+# NVIDIA NIM (primary LLM provider, used for embeddings and chat completions)
+NVIDIA_API_KEY=
+
+# OpenAI (used only for the Realtime voice API in Phase 5)
 OPENAI_API_KEY=
 
 # OpenSearch
@@ -536,7 +541,7 @@ OPENSEARCH_PASSWORD=
 # Mapbox (public token, exposed to client)
 NEXT_PUBLIC_MAPBOX_TOKEN=
 
-# Replicate (image embeddings, ingestion only)
+# Replicate (image embeddings, ingestion only, optional)
 REPLICATE_API_TOKEN=
 
 # Unsplash (photos, ingestion only)
