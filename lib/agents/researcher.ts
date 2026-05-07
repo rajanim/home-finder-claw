@@ -7,7 +7,7 @@
 // The synthesizer is an async generator: callers iterate `for await` and
 // forward each token to the SSE stream so the user sees bullets fill in.
 
-import { getNvidia, Models } from "../llm";
+import { getNvidia, Models, withNvidiaRetry } from "../llm";
 import { getOpenSearch, Indexes } from "../opensearch";
 import { endSpan, startSpan } from "../tracing";
 import type { FetcherName, Listing } from "../types";
@@ -100,19 +100,21 @@ export async function planFetchers(
 
   try {
     const client = getNvidia();
-    const resp = await client.chat.completions.create({
-      model: Models.researcher_planner,
-      temperature: 0,
-      max_tokens: 200,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: PLANNER_PROMPT },
-        {
-          role: "user",
-          content: JSON.stringify({ zip: context.zip, borough: context.borough }),
-        },
-      ],
-    });
+    const resp = await withNvidiaRetry(() =>
+      client.chat.completions.create({
+        model: Models.researcher_planner,
+        temperature: 0,
+        max_tokens: 200,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: PLANNER_PROMPT },
+          {
+            role: "user",
+            content: JSON.stringify({ zip: context.zip, borough: context.borough }),
+          },
+        ],
+      }),
+    );
     const raw = resp.choices?.[0]?.message?.content?.trim() ?? "";
     const parsed = parsePlannerJson(raw);
     endSpan(span, {
@@ -323,16 +325,18 @@ export async function* synthesizeBullets(
   let full = "";
   try {
     const client = getNvidia();
-    const stream = await client.chat.completions.create({
-      model: Models.researcher_synth,
-      temperature: 0.3,
-      max_tokens: 600,
-      stream: true,
-      messages: [
-        { role: "system", content: SYNTH_PROMPT },
-        { role: "user", content: JSON.stringify(fetched) },
-      ],
-    });
+    const stream = await withNvidiaRetry(() =>
+      client.chat.completions.create({
+        model: Models.researcher_synth,
+        temperature: 0.3,
+        max_tokens: 600,
+        stream: true,
+        messages: [
+          { role: "system", content: SYNTH_PROMPT },
+          { role: "user", content: JSON.stringify(fetched) },
+        ],
+      }),
+    );
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content ?? "";
       if (delta) {

@@ -55,3 +55,39 @@ export const Models = {
 // Embedding dimension matches the chosen NVIDIA model and the OpenSearch
 // listings-v1 schema in BUILD_SPEC.md section 5.1.
 export const EMBED_DIM = 1024;
+
+// Wrap an NVIDIA NIM call so transient 429 / 502 / 503 responses retry
+// with exponential backoff. The build.nvidia.com free tier rate-limits
+// per-account, and we can hit it during a busy demo when many agents
+// fan out at once. This keeps a single occasional 429 from becoming a
+// user-visible failure.
+export async function withNvidiaRetry<T>(
+  fn: () => Promise<T>,
+  options: { maxRetries?: number; initialDelayMs?: number } = {},
+): Promise<T> {
+  const maxRetries = options.maxRetries ?? 3;
+  let delay = options.initialDelayMs ?? 800;
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (e) {
+      const err = e as {
+        status?: number;
+        response?: { status?: number };
+        message?: string;
+      };
+      const status =
+        err.status ??
+        err.response?.status ??
+        (typeof err.message === "string" && err.message.includes("429")
+          ? 429
+          : undefined);
+      const retryable = status === 429 || status === 502 || status === 503;
+      if (!retryable || attempt >= maxRetries) throw e;
+      await new Promise((r) => setTimeout(r, delay));
+      attempt += 1;
+      delay *= 2;
+    }
+  }
+}

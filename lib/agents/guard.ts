@@ -7,7 +7,7 @@
 //
 // Model: NVIDIA NIM meta/llama-3.3-70b-instruct via the OpenAI SDK.
 
-import { getNvidia, Models } from "../llm";
+import { getNvidia, Models, withNvidiaRetry } from "../llm";
 import { endSpan, startSpan } from "../tracing";
 import type { GuardResult } from "../types";
 
@@ -45,16 +45,18 @@ export async function checkFairHousing(
 
   try {
     const client = getNvidia();
-    const resp = await client.chat.completions.create({
-      model: Models.guard,
-      temperature: 0,
-      max_tokens: 200,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: text },
-      ],
-    });
+    const resp = await withNvidiaRetry(() =>
+      client.chat.completions.create({
+        model: Models.guard,
+        temperature: 0,
+        max_tokens: 200,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: text },
+        ],
+      }),
+    );
 
     const raw = resp.choices?.[0]?.message?.content?.trim() ?? "";
     const parsed = parseGuardJson(raw);

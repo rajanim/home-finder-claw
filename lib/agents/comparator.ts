@@ -6,7 +6,7 @@
 //
 // Model: NVIDIA NIM meta/llama-3.3-70b-instruct.
 
-import { getNvidia, Models } from "../llm";
+import { getNvidia, Models, withNvidiaRetry } from "../llm";
 import { endSpan, startSpan } from "../tracing";
 import type { CompareResult, Listing } from "../types";
 
@@ -70,19 +70,21 @@ export async function compareListings(
 
   try {
     const client = getNvidia();
-    const resp = await client.chat.completions.create({
-      model: Models.comparator,
-      temperature: 0,
-      max_tokens: 800,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: JSON.stringify({ listings: listings.map(summarize) }),
-        },
-      ],
-    });
+    const resp = await withNvidiaRetry(() =>
+      client.chat.completions.create({
+        model: Models.comparator,
+        temperature: 0,
+        max_tokens: 800,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: JSON.stringify({ listings: listings.map(summarize) }),
+          },
+        ],
+      }),
+    );
     const raw = resp.choices?.[0]?.message?.content?.trim() ?? "";
     const parsed = parseCompareJson(raw, listings.length);
     endSpan(span, {

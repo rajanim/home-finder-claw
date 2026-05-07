@@ -5,7 +5,7 @@
 // JSON output is enforced via response_format. We also guard against bad
 // output with a defensive parser plus a sane default.
 
-import { getNvidia, Models } from "../llm";
+import { getNvidia, Models, withNvidiaRetry } from "../llm";
 import { endSpan, startSpan } from "../tracing";
 import type { Borough, Intent, IntentFilters } from "../types";
 
@@ -59,16 +59,18 @@ export async function decomposeIntent(
 
   try {
     const client = getNvidia();
-    const resp = await client.chat.completions.create({
-      model: Models.intent,
-      temperature: 0,
-      max_tokens: 400,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: query },
-      ],
-    });
+    const resp = await withNvidiaRetry(() =>
+      client.chat.completions.create({
+        model: Models.intent,
+        temperature: 0,
+        max_tokens: 400,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: query },
+        ],
+      }),
+    );
     const raw = resp.choices?.[0]?.message?.content?.trim() ?? "";
     const intent = parseIntent(raw, query);
     endSpan(span, {

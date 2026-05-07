@@ -20,6 +20,7 @@ Run from the repo root:
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 from tqdm import tqdm
@@ -39,9 +40,46 @@ log = get_logger("04_embed_text")
 INPUT = DATA_PROCESSED / "listings.with_photos.jsonl"
 OUTPUT = DATA_PROCESSED / "listings.embedded.jsonl"
 
-# NVIDIA's embedding endpoint accepts up to 96 inputs per call. 32 stays well
-# under the limit and keeps memory + latency predictable on Sandbox.
-BATCH_SIZE = 32
+# NVIDIA nv-embedqa-e5-v5 accepts up to 96 inputs per call. We use 64
+# to leave headroom while still cutting API call count vs 32. At 20k
+# listings that is ~313 calls instead of 625.
+BATCH_SIZE = 64
+# Retry settings for transient 429 / 502 / 503 from NVIDIA NIM.
+MAX_RETRIES = 4
+INITIAL_BACKOFF_S = 1.0
+
+
+def embed_with_retry(client, batch: list[str]) -> list[list[float]]:
+    backoff = INITIAL_BACKOFF_S
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            resp = client.embeddings.create(
+                model=EMBED_MODEL,
+                input=batch,
+                extra_body={"input_type": "passage"},
+            )
+            return [item.embedding for item in resp.data]
+        except Exception as e:
+            status = getattr(e, "status_code", None) or getattr(e, "status", None)
+            msg = str(e)
+            retryable = (
+                status in (429, 502, 503)
+                or "429" in msg
+                or "502" in msg
+                or "503" in msg
+                or "timeout" in msg.lower()
+            )
+            if attempt >= MAX_RETRIES or not retryable:
+                raise
+            log.warning(
+                "Embedding batch retry %d/%d after %.1fs: %s",
+                attempt + 1,
+                MAX_RETRIES,
+                backoff,
+                msg[:120],
+            )
+            time.sleep(backoff)
+            backoff *= 2
 
 
 def card_text(listing: dict) -> str:
@@ -73,15 +111,8 @@ def main() -> int:
 
     for start in tqdm(range(0, len(texts), BATCH_SIZE), desc="embed"):
         batch = texts[start : start + BATCH_SIZE]
-        resp = client.embeddings.create(
-            model=EMBED_MODEL,
-            input=batch,
-            # NVIDIA-specific: "passage" tells the model these are documents
-            # being indexed, not user queries. Improves asymmetric retrieval.
-            extra_body={"input_type": "passage"},
-        )
-        for item in resp.data:
-            vectors.append(item.embedding)
+        batch_vectors = embed_with_retry(client, batch)
+        vectors.extend(batch_vectors)
 
     if len(vectors) != len(listings):
         log.error("Vector count %d != listing count %d", len(vectors), len(listings))

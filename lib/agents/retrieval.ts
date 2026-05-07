@@ -9,7 +9,7 @@
 // enough coverage for the demo example queries; expanding it is a Phase 7
 // task.
 
-import { getNvidia, Models, EMBED_DIM } from "../llm";
+import { getNvidia, Models, EMBED_DIM, withNvidiaRetry } from "../llm";
 import { getOpenSearch, Indexes } from "../opensearch";
 import { endSpan, startSpan } from "../tracing";
 import type {
@@ -137,15 +137,16 @@ async function embedQuery(
   });
   try {
     const client = getNvidia();
-    const resp = await client.embeddings.create({
-      model: Models.embed,
-      input: [text],
-      // NVIDIA-specific: at search time we are embedding a user query, not
-      // a document, so use the "query" type for asymmetric retrieval.
-      // Pass via plain extra_body to stay compatible with the OpenAI SDK.
-      // @ts-expect-error -- input_type is a NVIDIA-specific extension.
-      input_type: "query",
-    });
+    const resp = await withNvidiaRetry(() =>
+      client.embeddings.create({
+        model: Models.embed,
+        input: [text],
+        // NVIDIA-specific: at search time we are embedding a user query,
+        // not a document, so use "query" for asymmetric retrieval.
+        // @ts-expect-error -- input_type is a NVIDIA-specific extension.
+        input_type: "query",
+      }),
+    );
     const vec = resp.data?.[0]?.embedding ?? [];
     if (vec.length !== EMBED_DIM) {
       throw new Error(
