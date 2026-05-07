@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -14,9 +14,10 @@ const EXAMPLE_QUERIES = [
 type Props = {
   onSearch: (query: string) => void;
   pending: boolean;
+  voiceSlot?: ReactNode;
 };
 
-export function SearchBar({ onSearch, pending }: Props) {
+export function SearchBar({ onSearch, pending, voiceSlot }: Props) {
   const [value, setValue] = useState("");
 
   function submit(e: FormEvent) {
@@ -32,9 +33,9 @@ export function SearchBar({ onSearch, pending }: Props) {
 
   return (
     <div className="w-full">
-      <form onSubmit={submit} className="flex w-full gap-2">
+      <form onSubmit={submit} className="flex w-full items-start gap-2">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-[18px] h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -51,6 +52,7 @@ export function SearchBar({ onSearch, pending }: Props) {
         >
           {pending ? "Searching..." : "Search"}
         </Button>
+        {voiceSlot && <div className="flex-none">{voiceSlot}</div>}
       </form>
       <div className="mt-3 flex flex-wrap gap-2">
         <span className="text-xs text-muted-foreground self-center mr-1">

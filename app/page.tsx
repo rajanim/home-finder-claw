@@ -7,6 +7,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { ListingCard } from "@/components/ListingCard";
 import { AgentActivityPanel } from "@/components/AgentActivity";
 import { CompareDrawer } from "@/components/CompareDrawer";
+import { VoiceButton } from "@/components/VoiceButton";
 import { Badge } from "@/components/ui/badge";
 import type { Listing, SearchResponse } from "@/lib/types";
 
@@ -101,6 +102,17 @@ export default function Home() {
           <SearchBar
             onSearch={onSearch}
             pending={status.kind === "loading"}
+            voiceSlot={
+              <VoiceButton
+                onSearchResult={(data) =>
+                  setStatus({
+                    kind: "ready",
+                    query: "(voice)",
+                    data,
+                  })
+                }
+              />
+            }
           />
         </div>
       </section>
