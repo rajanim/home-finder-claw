@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Bed, Bath, MapPin, Train, Home as HomeIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { BoroughBadge } from "@/components/ListingCard";
 import { PhotoCarousel } from "@/components/PhotoCarousel";
 import { ResearchPanel } from "@/components/ResearchPanel";
 import { getOpenSearch, Indexes } from "@/lib/opensearch";
@@ -47,17 +47,17 @@ export default async function ListingDetailPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="border-b border-border px-6 py-3">
+      <header className="border-b border-border bg-gradient-to-r from-primary/8 via-background to-background px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to search
           </Link>
           <span className="text-muted-foreground">/</span>
-          <span className="text-sm font-medium">Listing detail</span>
+          <span className="text-sm text-muted-foreground">Listing detail</span>
         </div>
       </header>
 
@@ -68,14 +68,14 @@ export default async function ListingDetailPage({
 
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
-              <div className="text-3xl font-semibold tabular-nums">
+              <div className="text-3xl font-bold tabular-nums text-primary">
                 {formatPrice(listing.price)}
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
                 {listing.address ?? `${listing.city}, ${listing.zip}`}
               </div>
             </div>
-            <Badge variant="secondary">{listing.borough}</Badge>
+            <BoroughBadge borough={listing.borough} />
           </div>
 
           <SpecsGrid listing={listing} />

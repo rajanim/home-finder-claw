@@ -124,7 +124,19 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background:
+      radial-gradient(
+        circle at 0% 0%,
+        oklch(0.97 0.025 256) 0%,
+        transparent 35%
+      ),
+      radial-gradient(
+        circle at 100% 0%,
+        oklch(0.97 0.02 230) 0%,
+        transparent 35%
+      ),
+      var(--background);
   }
   html {
     @apply font-sans;

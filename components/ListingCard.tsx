@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Bed, Bath, Train, Sparkles, Check } from "lucide-react";
-import type { Listing } from "@/lib/types";
+import type { Borough, Listing } from "@/lib/types";
 
 function formatPrice(p: number): string {
   if (p >= 1_000_000) return `$${(p / 1_000_000).toFixed(1)}M`;
@@ -16,6 +15,27 @@ function formatPrice(p: number): string {
 function formatDistance(m: number): string {
   if (m < 1000) return `${m} m`;
   return `${(m / 1000).toFixed(1)} km`;
+}
+
+// Borough-specific badge palette gives the result list visual variety
+// without departing from a clean Zillow-blue baseline. Tailwind base
+// utility classes so the colors render in any theme.
+const BOROUGH_BADGE: Record<Borough, string> = {
+  Manhattan: "bg-sky-100 text-sky-800 border-sky-200",
+  Brooklyn: "bg-orange-100 text-orange-800 border-orange-200",
+  Queens: "bg-teal-100 text-teal-800 border-teal-200",
+  Bronx: "bg-violet-100 text-violet-800 border-violet-200",
+  "Staten Island": "bg-emerald-100 text-emerald-800 border-emerald-200",
+};
+
+export function BoroughBadge({ borough }: { borough: Borough }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${BOROUGH_BADGE[borough]}`}
+    >
+      {borough}
+    </span>
+  );
 }
 
 type Props = {
@@ -44,8 +64,8 @@ export function ListingCard({
       onMouseEnter={() => onHover(listing.listing_id)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(listing.listing_id)}
-      className={`cursor-pointer overflow-hidden p-0 transition-shadow ${
-        active ? "ring-2 ring-primary shadow-md" : "hover:shadow-md"
+      className={`cursor-pointer overflow-hidden border-border/70 bg-card p-0 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg ${
+        active ? "ring-2 ring-primary shadow-lg" : ""
       } ${selected ? "ring-2 ring-primary" : ""}`}
     >
       <CardContent className="flex gap-3 p-3">
@@ -62,12 +82,10 @@ export function ListingCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <div className="text-lg font-semibold tabular-nums">
+            <div className="text-lg font-bold tabular-nums text-primary">
               {formatPrice(listing.price)}
             </div>
-            <Badge variant="secondary" className="text-xs">
-              {listing.borough}
-            </Badge>
+            <BoroughBadge borough={listing.borough} />
           </div>
           <div className="mt-1 truncate text-sm text-muted-foreground">
             {listing.address ?? `${listing.city}, ${listing.zip}`}

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { ArrowLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { EvalRunner } from "@/components/EvalRunner";
 import { TraceTimeline } from "@/components/TraceTimeline";
 
@@ -58,20 +57,17 @@ export default async function EvalPage() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="border-b border-border bg-background px-6 py-3">
+      <header className="border-b border-border bg-gradient-to-r from-primary/8 via-background to-background px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
           >
             <ArrowLeft className="h-4 w-4" />
             Search
           </Link>
           <span className="text-muted-foreground">/</span>
-          <span className="text-sm font-medium">Eval dashboard</span>
-          <Badge variant="secondary" className="text-xs">
-            Phase 6
-          </Badge>
+          <span className="text-sm text-muted-foreground">Eval dashboard</span>
         </div>
       </header>
 

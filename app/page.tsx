@@ -2,13 +2,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Scale } from "lucide-react";
+import { Scale, Building2 } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { ListingCard } from "@/components/ListingCard";
 import { AgentActivityPanel } from "@/components/AgentActivity";
 import { CompareDrawer } from "@/components/CompareDrawer";
 import { VoiceButton } from "@/components/VoiceButton";
-import { Badge } from "@/components/ui/badge";
 import type { Listing, SearchResponse } from "@/lib/types";
 
 const ListingMap = dynamic(
@@ -77,20 +76,22 @@ export default function Home() {
 
   return (
     <main className="flex h-full min-h-screen flex-1 flex-col">
-      <header className="border-b border-border bg-background px-6 py-4">
+      <header className="border-b border-border bg-gradient-to-r from-primary/8 via-background to-background px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <h1 className="text-xl font-semibold tracking-tight text-primary">
-            Home Finder Claw
-          </h1>
-          <Badge variant="secondary" className="text-xs">
-            Phase 6
-          </Badge>
-          <span className="text-sm text-muted-foreground">
-            New York City demo
-          </span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold leading-tight tracking-tight text-primary">
+              Home Finder Claw
+            </h1>
+            <span className="text-xs text-muted-foreground">
+              New York City real estate search, powered by agentic AI
+            </span>
+          </div>
           <a
             href="/eval"
-            className="ml-auto text-sm text-muted-foreground hover:text-primary"
+            className="ml-auto text-sm font-medium text-primary hover:underline"
           >
             Eval dashboard →
           </a>
