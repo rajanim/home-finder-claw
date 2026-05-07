@@ -82,11 +82,17 @@ export default function Home() {
             Home Finder Claw
           </h1>
           <Badge variant="secondary" className="text-xs">
-            Phase 4
+            Phase 6
           </Badge>
           <span className="text-sm text-muted-foreground">
             New York City demo
           </span>
+          <a
+            href="/eval"
+            className="ml-auto text-sm text-muted-foreground hover:text-primary"
+          >
+            Eval dashboard →
+          </a>
         </div>
       </header>
 
